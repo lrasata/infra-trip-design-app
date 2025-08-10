@@ -42,14 +42,15 @@ resource "aws_security_group" "sg_rds" {
 
 resource "aws_security_group" "sg_alb" {
   name        = "alb-sg"
-  description = "Allow HTTP"
+  description = "Allow HTTP traffic from CloudFront"
   vpc_id      = module.vpc.vpc_id
 
   ingress {
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    description      = "Allow HTTP from CloudFront IPv4"
+    from_port        = 80
+    to_port          = 80
+    protocol         = "tcp"
+    prefix_list_ids  = [var.cloudfront_prefix_list_ipv4]
   }
 
   egress {

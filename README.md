@@ -36,8 +36,9 @@ This architecture offers a robust, secure, and scalable backend environment to p
 - [ ] For monitoring purpose on TripDesignAPI, deploy [Monitoring services](https://github.com/lrasata/monitoring-services) built with Prometheus and Grafana --> define value
 
 ## 🔍 Gotcha -  what I have learned
-- ✅ *RDS Password Surprise:* Always provide a strong, non-trivial password to AWS RDS — even for testing. A weak password like postgres may be silently rejected by AWS, and RDS will auto-generate a new password, saving it in AWS Secrets Manager. Check this under DB Instance > Configuration > Master credentials ARN.
-  - In this case you may manually update secrets password provided to the ECS Service to align with the AWS RDS generated password.
+- ⚠️ *RDS Password Surprise:* Always provide a strong, non-trivial password to AWS RDS — even for testing. A weak password like postgres may be silently rejected by AWS, and RDS will auto-generate a new password, saving it in AWS Secrets Manager. 
+  - Check this under DB Instance > Configuration > Master credentials ARN.
+  - Currently you have to manually update secrets password provided to the ECS Service to align with the AWS RDS generated password. Then redeploy the ECS Service to apply the new secret.
 - 🛑 *Security Group Deletion Blocked:* Terraform cannot delete a security group if it's still attached to active resources (like ECS, ALB, or RDS) — even if the plan shows successful validation. This can stall terraform destroy for several minutes.
 
 - 🌐 *RDS Subnet Requirement:* AWS RDS in production mode requires at least two subnets in different availability zones to enable high availability. If you only provide one, deployment will fail silently or behave unexpectedly.

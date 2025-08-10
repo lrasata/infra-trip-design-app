@@ -19,6 +19,7 @@ module "alb" {
 
   name               = "alb-trip-design"
   load_balancer_type = "application"
+  internal           = false
   vpc_id             = module.vpc.vpc_id
   subnets            = module.vpc.public_subnets
   security_groups    = [aws_security_group.sg_alb.id]
