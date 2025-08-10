@@ -100,6 +100,28 @@ resource "aws_ecs_task_definition" "task-trip-design" {
   ])
 }
 
+resource "aws_security_group" "sg_ecs" {
+  name        = "ecs-sg"
+  description = "Allow outbound for ECS tasks and Allow inbound from NLB VPC Endpoint Service"
+  vpc_id      = module.vpc.vpc_id
+
+  # Allow traffic from the NLB on port 8080
+  ingress {
+    from_port       = 8080
+    to_port         = 8080
+    protocol        = "tcp"
+    prefix_list_ids = [aws_vpc_endpoint_service.nlb_endpoint_service.id]
+  }
+
+  # Allow ECS tasks to reach out to the internet
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
 resource "aws_ecs_service" "ecs_service_trip_design" {
   name            = "ecs-service-trip-design"
   cluster         = module.ecs_cluster.cluster_id
@@ -112,13 +134,13 @@ resource "aws_ecs_service" "ecs_service_trip_design" {
     assign_public_ip = false
   }
   load_balancer {
-    target_group_arn = module.alb.target_group_arns[0]
+    target_group_arn = aws_lb_target_group.nlb_tg_ecs.arn
     container_name   = "trip-design-container"
     container_port   = 8080
   }
 
   depends_on = [
-    module.alb,
+    aws_lb.nlb_internal,
     module.db
-  ] # ensures ALB and DB are created before ECS
+  ] # ensures NLB and DB are created before ECS
 }
