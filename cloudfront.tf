@@ -15,7 +15,7 @@ resource "aws_cloudfront_distribution" "cdn" {
   }
 
   origin {
-    domain_name = aws_vpc_endpoint_service.nlb_endpoint_service.service_name
+    domain_name = aws_vpc_endpoint.cloudfront_vpce.dns_entry[0].dns_name
     origin_id   = "nlb-vpce-origin"
 
     custom_origin_config {

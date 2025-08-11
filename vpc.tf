@@ -14,9 +14,40 @@ module "vpc" {
 }
 
 # CloudFront (Global) should access NLB in the VPC (no public IP) securely
-# To achieve this we expose load balancer as a VPC Endpoint Service (PrivateLink). This way, traffic stays within AWS network
-# Lower latency, more reliable, reduce charges for data transfer
+# To achieve this we expose load balancer as a VPC Endpoint Service (PrivateLink).
+# VPC Endpoint Service (PrivateLink) cannot directly connect on an ALB. It only supports Network Load Balancers (NLBs
 resource "aws_vpc_endpoint_service" "nlb_endpoint_service" {
   acceptance_required        = false
   network_load_balancer_arns = [aws_lb.nlb_internal.arn]
+}
+
+resource "aws_security_group" "vpce_sg" {
+  name        = "vpce_sg"
+  description = "Allow inbound from anywhere or CloudFront"
+  vpc_id      = module.vpc.vpc_id
+
+  ingress {
+    from_port   = 8080
+    to_port     = 8080
+    protocol    = "tcp"
+    cidr_blocks = [ "0.0.0.0/0" ]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+# VPCE endpoint is not publicly accessible, so we need to create an Interface VPC Endpoint for CloudFront
+resource "aws_vpc_endpoint" "cloudfront_vpce" {
+  vpc_id            = module.vpc.vpc_id
+  service_name      = aws_vpc_endpoint_service.nlb_endpoint_service.service_name
+  vpc_endpoint_type = "Interface"
+  subnet_ids        = module.vpc.public_subnets # Use public subnets for VPCE
+  # CloudFront is a global service running outside your VPC, so it can’t directly access private ENIs inside your VPC
+  # This is a valid workaround until getting a cert and setup a public ALB with HTTPS.
+  security_group_ids = [aws_security_group.vpce_sg.id]
 }

@@ -102,7 +102,7 @@ resource "aws_ecs_task_definition" "task-trip-design" {
 
 resource "aws_security_group" "sg_ecs" {
   name        = "ecs-sg"
-  description = "Allow outbound for ECS tasks and Allow inbound from NLB VPC Endpoint Service"
+  description = "Allow outbound for ECS tasks and Allow inbound from VPC Endpoint SG only"
   vpc_id      = module.vpc.vpc_id
 
   # Allow traffic from the NLB on port 8080
@@ -110,7 +110,7 @@ resource "aws_security_group" "sg_ecs" {
     from_port       = 8080
     to_port         = 8080
     protocol        = "tcp"
-    prefix_list_ids = [aws_vpc_endpoint_service.nlb_endpoint_service.id]
+    security_groups = [aws_security_group.vpce_sg.id]
   }
 
   # Allow ECS tasks to reach out to the internet
@@ -120,6 +120,10 @@ resource "aws_security_group" "sg_ecs" {
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
+
+  depends_on = [
+    aws_vpc_endpoint.cloudfront_vpce
+  ]
 }
 
 resource "aws_ecs_service" "ecs_service_trip_design" {
